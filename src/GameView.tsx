@@ -1,10 +1,21 @@
+import { useEffect, useState } from "react";
+import Canvas from "./components/Canvas";
+import Hand from "./components/Hand";
+import LifeSphere from "./components/LifeSphere";
+import Marker from "./components/Marker";
+import Orbs from "./components/Orbs";
+import PlayArea from "./components/PlayArea";
+import Score from "./components/Score";
+import Sky from "./components/Sky";
+import CardChoice from "./components/CardChoice";
+import Button from "./components/Button";
 import { useMachine } from "@xstate/react";
 import { machine } from "./state";
-import { scoreHand } from "./game";
-import Tokens from "./components/Tokens";
-import { useEffect, useState } from "react";
+import { getDifficultyLevel, MAX_DRAW, scoreHand } from "./game";
+import DeckStack from "./components/DeckStack";
+import Victory from "./components/Victory";
 
-const Game: React.FC = () => {
+const GameView: React.FC = () => {
   const [snapshot, send] = useMachine(machine);
 
   useEffect(() => {
@@ -22,220 +33,128 @@ const Game: React.FC = () => {
     currentBet,
     currentCard,
     hand,
-    deck,
-    discard,
+    poolSize,
   } = snapshot.context;
 
+  const level = getDifficultyLevel(player0Lives, player1Lives);
+
+  const isInitiativeWithPlayer0 = initiative === 0;
+  const isInitiativeWithPlayer1 = initiative === 1;
+
+  const handScores = scoreHand(hand);
+  const handScore = handScores.join("/");
+
+  const currentCardScores = currentCard ? scoreHand([currentCard]) : null;
+  const currentCardScore = currentCardScores
+    ? currentCardScores.join("/")
+    : null;
+
+  const isBettingPhase = snapshot.matches("betting");
   const [selectedTokens, setSelectedTokens] = useState<number[]>([]);
-
-  const bettingPlayer = initiative === 0 ? 1 : 0;
-
-  const handleTokenClick = (idx: number) => {
+  const toggleToken = (idx: number) => {
     setSelectedTokens((prev) =>
       prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx],
     );
   };
-
-  const handleBet = () => {
+  const confirmBet = () => {
     send({ type: "bet", params: { tokens: selectedTokens.length } });
     setSelectedTokens([]);
   };
+  const tokensInPlay = isBettingPhase
+    ? selectedTokens
+    : Array.from({ length: currentBet }, (_, i) => i);
+
+  const drawsRemaining = poolSize;
+  const allowedDraws = MAX_DRAW - level;
+
+  const isJudgingPhase = snapshot.matches("judging");
+
+  const isFinished = snapshot.matches("end");
+  const mostLives = Math.max(player0Lives, player1Lives);
+  const isPlayer0Winner = player0Lives === mostLives;
+  const isPlayer1Winner = player1Lives === mostLives;
 
   return (
-    <div className="flex flex-col items-center gap-8 mt-8">
-      <div className="flex gap-8 items-center mt-2 mb-2">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-gray-700">Deck:</span>
-          <span className="px-2 py-1 bg-blue-100 rounded text-blue-700 font-mono">
-            {deck.length}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-gray-700">Discard:</span>
-          <span className="px-2 py-1 bg-gray-200 rounded text-gray-700 font-mono">
-            {discard.length}
-          </span>
-        </div>
-      </div>
-      {snapshot.value}
+    <Canvas>
+      <Sky>
+        <Marker
+          position={initiative === 0 ? "top" : "bottom"}
+          level={level + 1}
+        />
+        {!isFinished && <DeckStack count={drawsRemaining} />}
 
-      <div className="flex flex-col items-center gap-2">
-        <div className="text-lg font-bold flex items-center gap-2">
-          Player 0
-          <span className="ml-2 text-red-500 text-xl">
-            {Array.from({ length: player0Lives })
-              .map(() => "❤️")
-              .join("")}
-          </span>
-          {initiative === 0 && (
-            <span className="px-2 py-1 bg-yellow-300 rounded text-xs font-semibold">
-              Initiative
-            </span>
-          )}
-        </div>
-        {snapshot.value === "betting" && bettingPlayer === 0 ? (
-          <div className="flex flex-col items-center mt-4">
-            <div className="text-sm mb-2">Select tokens to bet:</div>
-            <div className="mb-2">
-              <Tokens
-                count={player0Tokens}
-                selected={selectedTokens}
-                color="blue"
-                onToggle={handleTokenClick}
-              />
-            </div>
-            <button
-              className="px-4 py-1 bg-blue-500 text-white rounded disabled:opacity-50"
-              onClick={handleBet}
-            >
-              Bet {selectedTokens.length}
-            </button>
-          </div>
+        <LifeSphere lives={player0Lives} position="top" />
+        <Orbs
+          count={player0Tokens}
+          position="top"
+          selected={isInitiativeWithPlayer1 ? tokensInPlay : []}
+          onToggle={
+            isBettingPhase && isInitiativeWithPlayer1 ? toggleToken : undefined
+          }
+        />
+        {isFinished ? (
+          <Victory>
+            {isPlayer0Winner && "Player 1 wins!"}
+            {isPlayer1Winner && "Player 2 wins!"}
+          </Victory>
         ) : (
-          <Tokens
-            count={player0Tokens}
-            color="blue"
-            selected={
-              currentBet > 0 && initiative === 1
-                ? Array.from({ length: currentBet }, (_, i) => i)
-                : []
-            }
-          />
-        )}
-      </div>
+          <PlayArea>
+            <Hand cards={hand} />
 
-      {/* Card display and related UI */}
-      <div className="flex flex-col items-center gap-4 my-8">
-        {snapshot.value === "drawing" && currentCard && (
-          <div className="flex flex-col items-center gap-4">
-            <div className="text-lg font-semibold">Current Card</div>
-            <div className="flex items-center gap-4">
-              <div className="px-4 py-2 border rounded bg-white text-xl font-mono shadow">
-                {currentCard}
+            <Score
+              score={handScore}
+              potential={currentCardScore ?? undefined}
+            />
+
+            {currentCard && (
+              <CardChoice
+                card={currentCard}
+                onDiscard={() => send({ type: "discard" })}
+                onRetain={() => send({ type: "keep" })}
+              />
+            )}
+            {isJudgingPhase && (
+              <div className="flex justify-around w-full">
+                <Button
+                  onClick={() => send({ type: "stay" })}
+                  backgroundColor="var(--color-imperial-red)"
+                >
+                  stay
+                </Button>
+                <Button
+                  onClick={() => send({ type: "hit" })}
+                  backgroundColor="var(--color-mat-green)"
+                >
+                  hit
+                  <span className="ml-2 opacity-60">
+                    {drawsRemaining}/{allowedDraws}
+                  </span>
+                </Button>
               </div>
-              <button
-                className="px-4 py-2 bg-green-500 text-white rounded"
-                onClick={() => send({ type: "keep" })}
-              >
-                Keep
-              </button>
-              <button
-                className="px-4 py-2 bg-gray-400 text-white rounded"
-                onClick={() => send({ type: "discard" })}
-              >
-                Discard
-              </button>
-            </div>
-          </div>
-        )}
-        {snapshot.value === "judging" && (
-          <div className="flex flex-col items-center gap-4">
-            <div className="text-lg font-semibold">Judging Phase</div>
-            <div className="flex items-center gap-4">
-              <button
-                className="px-4 py-2 bg-blue-500 text-white rounded"
-                onClick={() => send({ type: "hit" })}
-              >
-                Hit
-              </button>
-              <button
-                className="px-4 py-2 bg-gray-500 text-white rounded"
-                onClick={() => send({ type: "stay" })}
-              >
-                Stay
-              </button>
-            </div>
-          </div>
-        )}
-        <div className="flex items-center gap-6">
-          <div>
-            <div className="text-md font-semibold mb-1">
-              Current Hand
-              <span className="ml-2 text-gray-600 text-base font-normal">
-                {hand && hand.length > 0
-                  ? (() => {
-                      const values = scoreHand(hand).join(", ");
-                      if (currentCard) {
-                        const withCard = scoreHand([...hand, currentCard]).join(
-                          ", ",
-                        );
-                        return `Value: ${values} (${withCard}?)`;
-                      }
-                      return `Value: ${values}`;
-                    })()
-                  : ""}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              {hand && hand.length > 0 ? (
-                hand.map((card: string, idx: number) => (
-                  <div
-                    key={idx}
-                    className="px-3 py-1 border rounded bg-gray-50 text-base font-mono shadow"
-                  >
-                    {card}
-                  </div>
-                ))
-              ) : (
-                <div className="text-gray-400 italic">No cards</div>
-              )}
-            </div>
-          </div>
-          <div>
-            <div className="text-md font-semibold mb-1">Draws Remaining</div>
-            <div className="px-3 py-1 border rounded bg-gray-50 text-base font-mono shadow text-center">
-              {snapshot.context.poolSize}
-            </div>
-          </div>
-        </div>
-      </div>
+            )}
 
-      <div className="flex flex-col items-center gap-2">
-        <div className="text-lg font-bold flex items-center gap-2">
-          Player 1
-          <span className="ml-2 text-red-500 text-xl">
-            {Array.from({ length: player1Lives })
-              .map(() => "❤️")
-              .join("")}
-          </span>
-          {initiative === 1 && (
-            <span className="px-2 py-1 bg-yellow-300 rounded text-xs font-semibold">
-              Initiative
-            </span>
-          )}
-        </div>
-        {snapshot.value === "betting" && bettingPlayer === 1 ? (
-          <div className="flex flex-col items-center mt-4">
-            <div className="text-sm mb-2">Select tokens to bet:</div>
-            <div className="mb-2">
-              <Tokens
-                count={player1Tokens}
-                selected={selectedTokens}
-                color="red"
-                onToggle={handleTokenClick}
-              />
-            </div>
-            <button
-              className="px-4 py-1 bg-red-500 text-white rounded disabled:opacity-50"
-              onClick={handleBet}
-            >
-              Bet {selectedTokens.length}
-            </button>
-          </div>
-        ) : (
-          <Tokens
-            count={player1Tokens}
-            color="red"
-            selected={
-              currentBet > 0 && initiative === 0
-                ? Array.from({ length: currentBet }, (_, i) => i)
-                : []
-            }
-          />
+            {isBettingPhase && (
+              <Button
+                onClick={confirmBet}
+                backgroundColor="var(--color-imperial-red)"
+              >
+                bet {selectedTokens.length}
+              </Button>
+            )}
+          </PlayArea>
         )}
-      </div>
-    </div>
+        <Orbs
+          count={player1Tokens}
+          position="bottom"
+          selected={isInitiativeWithPlayer0 ? tokensInPlay : []}
+          onToggle={
+            isBettingPhase && isInitiativeWithPlayer0 ? toggleToken : undefined
+          }
+        />
+        <LifeSphere lives={player1Lives} position="bottom" />
+      </Sky>
+    </Canvas>
   );
 };
 
-export default Game;
+export default GameView;
