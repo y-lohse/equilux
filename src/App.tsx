@@ -1,4 +1,4 @@
-import GameView from "./GameView";
+import GameView from "./GameView2";
 
 function App() {
   return <GameView />;
