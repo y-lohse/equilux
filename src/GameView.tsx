@@ -16,10 +16,11 @@ import DeckStack from "./components/DeckStack";
 import Victory from "./components/Victory";
 import { betTokens, hitOrStay, keepOrDiscard } from "./ai";
 
-const GameView: React.FC = () => {
+const GameView: React.FC<{
+  mainPlayerIndex: number;
+}> = ({ mainPlayerIndex }) => {
   const [snapshot, send] = useMachine(machine);
 
-  const mainPlayerIndex = 0;
   const remotePlayerIndex = mainPlayerIndex === 0 ? 1 : 0;
 
   useEffect(

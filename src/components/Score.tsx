@@ -38,9 +38,9 @@ const Score: React.FC<ScoreProps> = ({ scores, potentials, range }) => {
         -1px 1px 0 white`,
       }}
     >
-      {min && <span className="text-black mr-3">{min} &lt;</span>}
+      {min && <span className="text-black mr-3">{min} &le;</span>}
       <span className={scoreColor}>{scoreString}</span>
-      {max && <span className="text-black ml-2">&lt; {max}</span>}
+      {max && <span className="text-black ml-2">&le; {max}</span>}
       {potentialsString !== undefined && (
         <span className="text-mat-green">+{potentialsString}</span>
       )}

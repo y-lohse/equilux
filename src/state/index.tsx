@@ -118,12 +118,12 @@ export const machine = setup({
       const hasBlackJack = hand.length === 2 && scoreHand(hand).includes(21);
       if (!hasBlackJack) return {};
 
-      // player wins a token
-      const initiativePlayerTokens =
-        context.initiative === 0 ? "player0Tokens" : "player1Tokens";
+      // other player looses a token
+      const targetPlayerTokens =
+        context.initiative === 1 ? "player0Tokens" : "player1Tokens";
       return {
-        [initiativePlayerTokens]: Math.min(
-          context[initiativePlayerTokens] + 1,
+        [targetPlayerTokens]: Math.min(
+          context[targetPlayerTokens] - 1,
           MAX_TOKENS,
         ),
       };
