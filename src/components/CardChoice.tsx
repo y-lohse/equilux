@@ -3,9 +3,15 @@ import Card from "./Card";
 
 type CardChoiceProps = {
   card: CardString;
+  onDiscard: () => void;
+  onRetain: () => void;
 };
 
-const CardChoice: React.FC<CardChoiceProps> = ({ card }) => {
+const CardChoice: React.FC<CardChoiceProps> = ({
+  card,
+  onDiscard,
+  onRetain,
+}) => {
   return (
     <div className="w-full flex flex-row items-center justify-center relative overflow-hidden">
       <div
@@ -13,6 +19,7 @@ const CardChoice: React.FC<CardChoiceProps> = ({ card }) => {
         style={{ transform: "translateX(-70%)" }}
       >
         <button
+          onClick={onDiscard}
           className="h-full pl-28 pr-4 flex flex-col justify-center items-center bg-imperial-red text-white rounded-md"
           style={{
             boxShadow:
@@ -34,6 +41,7 @@ const CardChoice: React.FC<CardChoiceProps> = ({ card }) => {
         style={{ transform: "translateX(70%)" }}
       >
         <button
+          onClick={onRetain}
           className="h-full pr-28 pl-4  flex flex-col justify-center items-center bg-mat-green text-white rounded-md"
           style={{
             boxShadow:

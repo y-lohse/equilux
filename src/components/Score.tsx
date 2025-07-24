@@ -1,6 +1,6 @@
 type ScoreProps = {
-  score: number;
-  potential?: number;
+  score: string | number;
+  potential?: string | number;
 };
 
 const Score: React.FC<ScoreProps> = ({ score, potential }) => {

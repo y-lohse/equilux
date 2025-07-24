@@ -1,5 +1,11 @@
 import { setup, assign, raise } from "xstate";
-import { type CardString, scoreHand } from "../game";
+import {
+  type CardString,
+  getDifficultyLevel,
+  MAX_DRAW,
+  scoreHand,
+  STEPS,
+} from "../game";
 
 export const machine = setup({
   types: {
@@ -29,8 +35,11 @@ export const machine = setup({
   actions: {
     initPoolSize: assign({
       poolSize: ({ context }) => {
-        const diff = Math.abs(context.player0Lives - context.player1Lives);
-        return Math.max(7 - diff, 2);
+        const diff = getDifficultyLevel(
+          context.player0Lives,
+          context.player1Lives,
+        );
+        return Math.max(MAX_DRAW - diff, 2);
       },
     }),
     drawCard: assign(({ context }) => {
@@ -68,6 +77,7 @@ export const machine = setup({
         type: hasWinningScore ? ("win" as const) : ("lose" as const),
       };
     }),
+    // TODO blackjack rule
     discardHand: assign(({ context }) => {
       const newDiscard = [...context.discard, ...context.hand];
 
@@ -81,7 +91,8 @@ export const machine = setup({
         event.type === "bet" ? event.params.tokens : context.currentBet,
     }),
     winLife: assign(({ context }) => {
-      const hasHitMaxLives = context.player0Lives + context.player1Lives >= 10;
+      const hasHitMaxLives =
+        context.player0Lives + context.player1Lives >= STEPS;
       if (hasHitMaxLives) return {};
 
       const targetPlayerLives =

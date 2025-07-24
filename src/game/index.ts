@@ -15,6 +15,9 @@ type CardValue =
 type CardSuit = "H" | "D" | "C" | "S";
 export type CardString = `${CardValue}${CardSuit}`;
 
+export const MAX_DRAW = 7;
+export const STEPS = 10;
+
 export const scoreHand = (hand: CardString[]): number[] => {
   let scores = [0];
   for (const card of hand) {
@@ -28,4 +31,8 @@ export const scoreHand = (hand: CardString[]): number[] => {
     }
   }
   return Array.from(new Set(scores)).sort((a, b) => a - b);
+};
+
+export const getDifficultyLevel = (lives0: number, lives1: number): number => {
+  return STEPS - (lives0 + lives1);
 };

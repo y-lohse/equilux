@@ -2,14 +2,17 @@ import type { PropsWithChildren } from "react";
 
 type ButtonProps = {
   backgroundColor: string;
+  onClick?: () => void;
 };
 
 const Button: React.FC<PropsWithChildren<ButtonProps>> = ({
   backgroundColor,
+  onClick,
   children,
 }) => {
   return (
     <button
+      onClick={onClick}
       style={{
         background: backgroundColor,
         boxShadow: `inset 0 0 0 3px ${backgroundColor}, inset 0 0 0 4px white`,
