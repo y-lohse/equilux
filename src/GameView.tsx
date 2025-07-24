@@ -14,15 +14,64 @@ import { machine } from "./state";
 import { getDifficultyLevel, MAX_DRAW, scoreHand } from "./game";
 import DeckStack from "./components/DeckStack";
 import Victory from "./components/Victory";
+import { betTokens, hitOrStay, keepOrDiscard } from "./ai";
 
 const GameView: React.FC = () => {
   const [snapshot, send] = useMachine(machine);
 
-  useEffect(() => {
-    if (snapshot.can({ type: "begin" })) {
-      send({ type: "begin" });
-    }
-  }, [snapshot, send]);
+  const mainPlayerIndex = 0;
+  const remotePlayerIndex = mainPlayerIndex === 0 ? 1 : 0;
+
+  useEffect(
+    function autoAdvance() {
+      if (snapshot.can({ type: "begin" })) {
+        send({ type: "begin" });
+      }
+
+      if (snapshot.matches("waiting")) {
+        setTimeout(() => send({ type: "resolve" }), 2000);
+      }
+    },
+    [snapshot, send],
+  );
+
+  useEffect(
+    function AIPlays() {
+      if (
+        snapshot.matches("betting") &&
+        snapshot.context.initiative === mainPlayerIndex
+      ) {
+        const bet = betTokens(snapshot, remotePlayerIndex);
+        setTimeout(
+          () =>
+            send({
+              type: "bet",
+              params: { tokens: bet },
+            }),
+          1000,
+        );
+      }
+
+      if (
+        snapshot.matches("drawing") &&
+        snapshot.context.initiative === remotePlayerIndex
+      ) {
+        const result = keepOrDiscard(snapshot, remotePlayerIndex);
+        // console.log({ result });
+        setTimeout(() => send({ type: result }), 1000);
+      }
+
+      if (
+        snapshot.matches("judging") &&
+        snapshot.context.initiative === remotePlayerIndex
+      ) {
+        const result = hitOrStay(snapshot, remotePlayerIndex);
+        // console.log(result);
+        setTimeout(() => send({ type: result }), 1000);
+      }
+    },
+    [remotePlayerIndex, send, snapshot],
+  );
 
   const {
     player0Tokens,
@@ -40,16 +89,13 @@ const GameView: React.FC = () => {
 
   const isInitiativeWithPlayer0 = initiative === 0;
   const isInitiativeWithPlayer1 = initiative === 1;
+  const isPlayerInitiative = initiative === mainPlayerIndex;
 
   const handScores = scoreHand(hand);
-  const handScore = handScores.join("/");
-
   const currentCardScores = currentCard ? scoreHand([currentCard]) : null;
-  const currentCardScore = currentCardScores
-    ? currentCardScores.join("/")
-    : null;
 
   const isBettingPhase = snapshot.matches("betting");
+  const isPlayerBetting = !isPlayerInitiative && isBettingPhase;
   const [selectedTokens, setSelectedTokens] = useState<number[]>([]);
   const toggleToken = (idx: number) => {
     setSelectedTokens((prev) =>
@@ -74,6 +120,11 @@ const GameView: React.FC = () => {
   const isPlayer0Winner = player0Lives === mostLives;
   const isPlayer1Winner = player1Lives === mostLives;
 
+  const isReadyToResolve = snapshot.matches("waiting");
+  const tolerance = 3 - currentBet;
+  const showCurrentBet = !isPlayerInitiative || isReadyToResolve;
+  const acceptableRange: [number, number] = [21 - tolerance, 21 + tolerance];
+
   return (
     <Canvas>
       <Sky>
@@ -87,7 +138,9 @@ const GameView: React.FC = () => {
         <Orbs
           count={player0Tokens}
           position="top"
-          selected={isInitiativeWithPlayer1 ? tokensInPlay : []}
+          selected={
+            isInitiativeWithPlayer1 && showCurrentBet ? tokensInPlay : []
+          }
           onToggle={
             isBettingPhase && isInitiativeWithPlayer1 ? toggleToken : undefined
           }
@@ -102,8 +155,9 @@ const GameView: React.FC = () => {
             <Hand cards={hand} />
 
             <Score
-              score={handScore}
-              potential={currentCardScore ?? undefined}
+              scores={handScores}
+              potentials={currentCardScores ?? undefined}
+              range={isReadyToResolve ? acceptableRange : undefined}
             />
 
             {currentCard && (
@@ -137,6 +191,7 @@ const GameView: React.FC = () => {
               <Button
                 onClick={confirmBet}
                 backgroundColor="var(--color-imperial-red)"
+                disabled={!isPlayerBetting}
               >
                 bet {selectedTokens.length}
               </Button>
@@ -146,7 +201,9 @@ const GameView: React.FC = () => {
         <Orbs
           count={player1Tokens}
           position="bottom"
-          selected={isInitiativeWithPlayer0 ? tokensInPlay : []}
+          selected={
+            showCurrentBet && isInitiativeWithPlayer0 ? tokensInPlay : []
+          }
           onToggle={
             isBettingPhase && isInitiativeWithPlayer0 ? toggleToken : undefined
           }

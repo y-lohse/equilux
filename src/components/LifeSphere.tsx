@@ -13,13 +13,13 @@ const LifeSphere: React.FC<{
       }}
     >
       <div
-        className={`w-[150%] aspect-square bg-white rounded-full absolute flex flex-col ${justify} items-center`}
+        className={`w-[150%] aspect-square bg-stone-200 rounded-full absolute flex flex-col ${justify} items-center`}
         style={{
           left: "-25%",
           [prop]: 0,
         }}
       >
-        <div className=" text-stone-400 mt-2 text-4xl">{lives}</div>
+        <div className=" text-stone-500 mt-2 text-4xl">{lives}</div>
       </div>
     </div>
   );

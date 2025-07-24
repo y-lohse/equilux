@@ -29,6 +29,7 @@ export const machine = setup({
       | { type: "stay" }
       | { type: "begin" }
       | { type: "lose" }
+      | { type: "resolve" }
       | { type: "hit" }
       | { type: "keep" }
       | { type: "discard" },
@@ -237,16 +238,26 @@ export const machine = setup({
     judging: {
       on: {
         stay: {
-          target: "resolving",
+          target: "waiting",
         },
         hit: {
           target: "drawing",
         },
       },
       always: {
-        target: "resolving",
+        target: "waiting",
         guard: {
           type: "poolEmpty",
+        },
+      },
+    },
+    waiting: {
+      on: {
+        resolve: {
+          target: "resolving",
+          actions: {
+            type: "resolveHand",
+          },
         },
       },
     },
@@ -277,9 +288,6 @@ export const machine = setup({
             },
           ],
         },
-      },
-      entry: {
-        type: "resolveHand",
       },
     },
     scoring: {
