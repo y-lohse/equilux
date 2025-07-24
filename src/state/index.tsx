@@ -3,6 +3,7 @@ import {
   type CardString,
   getDifficultyLevel,
   MAX_DRAW,
+  MAX_TOKENS,
   scoreHand,
   STEPS,
 } from "../game";
@@ -77,7 +78,6 @@ export const machine = setup({
         type: hasWinningScore ? ("win" as const) : ("lose" as const),
       };
     }),
-    // TODO blackjack rule
     discardHand: assign(({ context }) => {
       const newDiscard = [...context.discard, ...context.hand];
 
@@ -111,6 +111,21 @@ export const machine = setup({
     }),
     turnOver: assign({
       initiative: ({ context }) => (context.initiative === 0 ? 1 : 0),
+    }),
+    checkBlackJack: assign(({ context }) => {
+      const { hand } = context;
+      const hasBlackJack = hand.length === 2 && scoreHand(hand).includes(21);
+      if (!hasBlackJack) return {};
+
+      // player wins a token
+      const initiativePlayerTokens =
+        context.initiative === 0 ? "player0Tokens" : "player1Tokens";
+      return {
+        [initiativePlayerTokens]: Math.min(
+          context[initiativePlayerTokens] + 1,
+          MAX_TOKENS,
+        ),
+      };
     }),
     loseBet: assign({
       player0Tokens: ({ context }) =>
@@ -240,6 +255,7 @@ export const machine = setup({
         win: {
           target: "scoring",
           actions: [
+            { type: "checkBlackJack" },
             { type: "discardHand" },
             {
               type: "loseLife",

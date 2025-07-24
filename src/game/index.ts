@@ -16,6 +16,7 @@ type CardSuit = "H" | "D" | "C" | "S";
 export type CardString = `${CardValue}${CardSuit}`;
 
 export const MAX_DRAW = 7;
+export const MAX_TOKENS = 3;
 export const STEPS = 10;
 
 export const scoreHand = (hand: CardString[]): number[] => {
