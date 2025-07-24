@@ -17,8 +17,9 @@ const Orbs: React.FC<OrbsProps> = ({ count, position, selected, onToggle }) => {
         <button
           key={i}
           style={{
-            width: "4vw",
-            height: "4vw",
+            width: "30px",
+            height: "30px",
+            aspectRatio: "1 / 1",
             transform: `translateY(${-base + base * Math.abs(i - center)}px)`,
           }}
           onClick={() => onToggle?.(i)}

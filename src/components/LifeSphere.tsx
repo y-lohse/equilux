@@ -19,7 +19,7 @@ const LifeSphere: React.FC<{
           [prop]: 0,
         }}
       >
-        <div className=" text-stone-500 mt-2 text-3xl">{lives}</div>
+        <div className=" text-stone-400 mt-2 text-4xl">{lives}</div>
       </div>
     </div>
   );

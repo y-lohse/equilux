@@ -12,6 +12,8 @@ import Button from "./components/Button";
 import { useMachine } from "@xstate/react";
 import { machine } from "./state";
 import { getDifficultyLevel, MAX_DRAW, scoreHand } from "./game";
+import DeckStack from "./components/DeckStack";
+import Victory from "./components/Victory";
 
 const GameView: React.FC = () => {
   const [snapshot, send] = useMachine(machine);
@@ -62,9 +64,15 @@ const GameView: React.FC = () => {
     ? selectedTokens
     : Array.from({ length: currentBet }, (_, i) => i);
 
-  const drawsRemaining = MAX_DRAW - level;
+  const drawsRemaining = poolSize;
+  const allowedDraws = MAX_DRAW - level;
 
   const isJudgingPhase = snapshot.matches("judging");
+
+  const isFinished = snapshot.matches("end");
+  const mostLives = Math.max(player0Lives, player1Lives);
+  const isPlayer0Winner = player0Lives === mostLives;
+  const isPlayer1Winner = player1Lives === mostLives;
 
   return (
     <Canvas>
@@ -73,6 +81,8 @@ const GameView: React.FC = () => {
           position={initiative === 0 ? "top" : "bottom"}
           level={level + 1}
         />
+        {!isFinished && <DeckStack count={drawsRemaining} />}
+
         <LifeSphere lives={player0Lives} position="top" />
         <Orbs
           count={player0Tokens}
@@ -82,49 +92,57 @@ const GameView: React.FC = () => {
             isBettingPhase && isInitiativeWithPlayer1 ? toggleToken : undefined
           }
         />
-        <PlayArea>
-          <Hand cards={hand} />
-          {handScore !== "0" && (
+        {isFinished ? (
+          <Victory>
+            {isPlayer0Winner && "Player 1 wins!"}
+            {isPlayer1Winner && "Player 2 wins!"}
+          </Victory>
+        ) : (
+          <PlayArea>
+            <Hand cards={hand} />
+
             <Score
               score={handScore}
               potential={currentCardScore ?? undefined}
             />
-          )}
-          {currentCard && (
-            <CardChoice
-              card={currentCard}
-              onDiscard={() => send({ type: "discard" })}
-              onRetain={() => send({ type: "keep" })}
-            />
-          )}
-          {isJudgingPhase && (
-            <div className="flex justify-around w-full">
+
+            {currentCard && (
+              <CardChoice
+                card={currentCard}
+                onDiscard={() => send({ type: "discard" })}
+                onRetain={() => send({ type: "keep" })}
+              />
+            )}
+            {isJudgingPhase && (
+              <div className="flex justify-around w-full">
+                <Button
+                  onClick={() => send({ type: "stay" })}
+                  backgroundColor="var(--color-imperial-red)"
+                >
+                  stay
+                </Button>
+                <Button
+                  onClick={() => send({ type: "hit" })}
+                  backgroundColor="var(--color-mat-green)"
+                >
+                  hit
+                  <span className="ml-2 opacity-60">
+                    {drawsRemaining}/{allowedDraws}
+                  </span>
+                </Button>
+              </div>
+            )}
+
+            {isBettingPhase && (
               <Button
-                onClick={() => send({ type: "stay" })}
+                onClick={confirmBet}
                 backgroundColor="var(--color-imperial-red)"
               >
-                stay
+                bet {selectedTokens.length}
               </Button>
-              <Button
-                onClick={() => send({ type: "hit" })}
-                backgroundColor="var(--color-mat-green)"
-              >
-                hit
-                <span className="ml-2 opacity-60">
-                  {poolSize}/{drawsRemaining}
-                </span>
-              </Button>
-            </div>
-          )}
-          {isBettingPhase && (
-            <Button
-              onClick={confirmBet}
-              backgroundColor="var(--color-imperial-red)"
-            >
-              bet {selectedTokens.length}
-            </Button>
-          )}
-        </PlayArea>
+            )}
+          </PlayArea>
+        )}
         <Orbs
           count={player1Tokens}
           position="bottom"
