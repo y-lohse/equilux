@@ -71,7 +71,7 @@ const GameView: React.FC<{
         setTimeout(() => send({ type: result }), 1000);
       }
     },
-    [remotePlayerIndex, send, snapshot],
+    [mainPlayerIndex, remotePlayerIndex, send, snapshot],
   );
 
   const {
@@ -129,10 +129,11 @@ const GameView: React.FC<{
   return (
     <Canvas>
       <Sky>
-        <Marker
-          position={initiative === 0 ? "top" : "bottom"}
-          level={level + 1}
-        />
+        <div
+          className={`transition-all duration-500 w-12 h-12 flex items-center justify-center absolute z-10 right-4 ${initiative === 0 ? "top" : "bottom"}`}
+        >
+          <Marker level={level + 1} />
+        </div>
         {!isFinished && <DeckStack count={drawsRemaining} />}
 
         <LifeSphere lives={player0Lives} position="top" />
