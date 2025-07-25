@@ -18,7 +18,8 @@ import { betTokens, hitOrStay, keepOrDiscard } from "./ai";
 
 const GameView: React.FC<{
   mainPlayerIndex: number;
-}> = ({ mainPlayerIndex }) => {
+  onClose: () => void;
+}> = ({ mainPlayerIndex, onClose }) => {
   const [snapshot, send] = useMachine(machine);
 
   const remotePlayerIndex = mainPlayerIndex === 0 ? 1 : 0;
@@ -151,6 +152,12 @@ const GameView: React.FC<{
           <Victory>
             {isPlayer0Winner && "Player 1 wins!"}
             {isPlayer1Winner && "Player 2 wins!"}
+            <Button
+              onClick={onClose}
+              backgroundColor="var(--color-imperial-red)"
+            >
+              main menu
+            </Button>
           </Victory>
         ) : (
           <PlayArea>
