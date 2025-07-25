@@ -53,7 +53,8 @@ const screens = [
           <li>Passive player secretly bets tokens.</li>
           <li>Active player draws a card from the deck.</li>
           <li>
-            They decide whether to add the card to their hand or discard it.
+            Active player decides whether to add the card to their hand or
+            discard it.
           </li>
           <li>
             They can then choose to <em>hit</em> (request another card) or{" "}
@@ -104,8 +105,8 @@ const screens = [
         </div>
 
         <p className="mb-4">
-          By betting tokens, the defender decides how close to 21 the attacker
-          must get to win the round:
+          By betting tokens, the passive player decides how close to 21 the
+          active player must get to win the round:
         </p>
 
         <div className="flex flex-row justify-between gap-4 mb-2">

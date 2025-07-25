@@ -12,7 +12,12 @@ const App = () => {
     return <HowToPlay onClose={() => setCurrentView("menu")} />;
   }
   if (currentView === "play") {
-    return <GameView mainPlayerIndex={Math.random() > 0.5 ? 1 : 0} />;
+    return (
+      <GameView
+        mainPlayerIndex={Math.random() > 0.5 ? 1 : 0}
+        onClose={() => setCurrentView("menu")}
+      />
+    );
   }
   if (currentView === "menu") {
     return <Menu onSelect={setCurrentView} />;
